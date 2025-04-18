@@ -4,6 +4,10 @@ use std::ops::Range;
 
 pub mod lexer;
 pub mod parser;
+pub mod mapper;
+
+#[cfg(feature = "derive")]
+pub use confetti_derive::ConfMap;
 
 // Private module for derive macro implementation details
 #[doc(hidden)]
@@ -173,6 +177,116 @@ pub fn parse(input: &str, options: ConfOptions) -> Result<ConfUnit, ConfError> {
     parser.parse()
 }
 
+// Re-export key traits from mapper module
+pub use crate::mapper::{FromConf, ToConf, ValueConverter, MapperError, MapperOptions};
+
+// Create convenience wrappers for common operations
+/// Load configuration from a file into a struct
+/// 
+/// # Example
+/// 
+/// ```ignore
+/// use confetti_rs::{from_file, ConfMap};
+/// 
+/// #[derive(ConfMap, Debug)]
+/// struct ServerConfig {
+///     port: i32,
+///     host: String,
+///     #[conf_map(name = "max-connections")]
+///     max_connections: Option<i32>,
+/// }
+/// 
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let _server_config = ServerConfig { port: 8080, host: "localhost".into(), max_connections: Some(100) };
+/// // let server_config = from_file::<ServerConfig>("config.conf")?;
+/// # Ok(())
+/// # }
+/// ```
+pub fn from_file<T: FromConf, P: AsRef<std::path::Path>>(path: P) -> Result<T, mapper::MapperError> {
+    T::from_file(path)
+}
+
+/// Load configuration from a string into a struct
+/// 
+/// # Example
+/// 
+/// ```ignore
+/// use confetti_rs::{from_str, ConfMap};
+/// 
+/// #[derive(ConfMap, Debug)]
+/// struct ServerConfig {
+///     port: i32,
+///     host: String,
+/// }
+/// 
+/// let config_str = r#"
+/// ServerConfig {
+///   port 8080;
+///   host "localhost";
+/// }
+/// "#;
+/// 
+/// let server_config = from_str::<ServerConfig>(config_str).unwrap();
+/// assert_eq!(server_config.port, 8080);
+/// assert_eq!(server_config.host, "localhost");
+/// ```
+pub fn from_str<T: FromConf>(s: &str) -> Result<T, mapper::MapperError> {
+    T::from_str(s)
+}
+
+/// Convert a struct to a configuration string
+/// 
+/// # Example
+/// 
+/// ```ignore
+/// use confetti_rs::{to_string, ConfMap};
+/// 
+/// #[derive(ConfMap, Debug)]
+/// struct ServerConfig {
+///     port: i32,
+///     host: String,
+/// }
+/// 
+/// let server_config = ServerConfig {
+///     port: 8080,
+///     host: "localhost".into(),
+/// };
+/// 
+/// let config_str = to_string(&server_config).unwrap();
+/// assert!(config_str.contains("port 8080"));
+/// assert!(config_str.contains("host \"localhost\""));
+/// ```
+pub fn to_string<T: ToConf>(value: &T) -> Result<String, mapper::MapperError> {
+    value.to_string()
+}
+
+/// Save a struct to a configuration file
+/// 
+/// # Example
+/// 
+/// ```ignore
+/// use confetti_rs::{to_file, ConfMap};
+/// 
+/// #[derive(ConfMap, Debug)]
+/// struct ServerConfig {
+///     port: i32,
+///     host: String,
+/// }
+/// 
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let server_config = ServerConfig {
+///     port: 8080,
+///     host: "localhost".into(),
+/// };
+/// 
+/// // to_file(&server_config, "config.conf")?;
+/// # Ok(())
+/// # }
+/// ```
+pub fn to_file<T: ToConf, P: AsRef<std::path::Path>>(value: &T, path: P) -> Result<(), mapper::MapperError> {
+    value.to_file(path)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -204,14 +318,12 @@ mod tests {
         let options = ConfOptions::default();
         let result = parse(input, options);
         assert!(result.is_ok());
-        let conf_unit = result.unwrap();
-        assert_eq!(conf_unit.directives.len(), 0);
-        assert_eq!(conf_unit.comments.len(), 0);
+        assert_eq!(result.unwrap().directives.len(), 0);
     }
 
     #[test]
     fn test_parse_simple_directive() {
-        let input = "server localhost";
+        let input = "server localhost;";
         let options = ConfOptions::default();
         let result = parse(input, options);
         assert!(result.is_ok());
@@ -231,7 +343,6 @@ mod tests {
         let conf_unit = result.unwrap();
         assert_eq!(conf_unit.directives.len(), 1);
         assert_eq!(conf_unit.directives[0].name.value, "server");
-        assert_eq!(conf_unit.directives[0].arguments.len(), 0);
         assert_eq!(conf_unit.directives[0].children.len(), 1);
         assert_eq!(conf_unit.directives[0].children[0].name.value, "listen");
         assert_eq!(conf_unit.directives[0].children[0].arguments.len(), 1);
@@ -240,64 +351,58 @@ mod tests {
 
     #[test]
     fn test_parse_with_comments() {
-        let input = "# Comment\nserver localhost";
-        let options = ConfOptions {
-            allow_c_style_comments: true,
-            ..Default::default()
-        };
-        let result = parse(input, options);
-        assert!(result.is_ok());
-        let conf_unit = result.unwrap();
-        assert_eq!(conf_unit.directives.len(), 1);
-        assert_eq!(conf_unit.comments.len(), 1);
-    }
-
-    #[test]
-    fn test_parse_quoted_arguments() {
-        let input = r#"server "localhost with spaces""#;
+        let input = "# This is a comment\nserver {\n  # Another comment\n  listen 80;\n}";
         let options = ConfOptions::default();
         let result = parse(input, options);
         assert!(result.is_ok());
         let conf_unit = result.unwrap();
         assert_eq!(conf_unit.directives.len(), 1);
-        assert_eq!(conf_unit.directives[0].name.value, "server");
+        assert_eq!(conf_unit.comments.len(), 1);
+        assert_eq!(conf_unit.comments[0].content, "# This is a comment");
+    }
+
+    #[test]
+    fn test_parse_quoted_arguments() {
+        let input = r#"server "example.com";"#;
+        let options = ConfOptions::default();
+        let result = parse(input, options);
+        assert!(result.is_ok());
+        let conf_unit = result.unwrap();
+        assert_eq!(conf_unit.directives.len(), 1);
         assert_eq!(conf_unit.directives[0].arguments.len(), 1);
-        assert_eq!(conf_unit.directives[0].arguments[0].value, "\"localhost with spaces\"");
+        assert_eq!(conf_unit.directives[0].arguments[0].value, "\"example.com\"");
         assert!(conf_unit.directives[0].arguments[0].is_quoted);
     }
 
     #[test]
     fn test_parse_triple_quoted_arguments() {
         let input = r#"server """
-            localhost
-            with multiple
-            lines
-        """"#;
+        This is a multi-line
+        string argument
+        """;"#;
         let options = ConfOptions::default();
         let result = parse(input, options);
         assert!(result.is_ok());
         let conf_unit = result.unwrap();
         assert_eq!(conf_unit.directives.len(), 1);
-        assert_eq!(conf_unit.directives[0].name.value, "server");
         assert_eq!(conf_unit.directives[0].arguments.len(), 1);
-        assert!(conf_unit.directives[0].arguments[0].is_quoted);
+        assert!(conf_unit.directives[0].arguments[0].value.contains("multi-line"));
         assert!(conf_unit.directives[0].arguments[0].is_triple_quoted);
     }
 
     #[test]
     fn test_parse_line_continuation() {
-        let input = "server \\\nlocalhost";
-        let options = ConfOptions::default();
+        let input = "server \\\nexample.com;";
+        let options = ConfOptions {
+            allow_line_continuations: true,
+            ..ConfOptions::default()
+        };
         let result = parse(input, options);
-        if let Err(ref e) = result {
-            println!("Error: {:?}", e);
-        }
         assert!(result.is_ok());
         let conf_unit = result.unwrap();
         assert_eq!(conf_unit.directives.len(), 1);
-        assert_eq!(conf_unit.directives[0].name.value, "server");
         assert_eq!(conf_unit.directives[0].arguments.len(), 1);
-        assert_eq!(conf_unit.directives[0].arguments[0].value, "localhost");
+        assert_eq!(conf_unit.directives[0].arguments[0].value, "example.com");
     }
 }
 

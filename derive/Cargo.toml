@@ -1,0 +1,18 @@
+[package]
+name = "confetti-derive"
+version = "0.1.0"
+edition = "2024"
+description = "Derive macros for confetti-rs"
+authors = ["Your Name <your.email@example.com>"]
+license = "MIT"
+repository = "https://github.com/yourusername/confetti-rs"
+documentation = "https://docs.rs/confetti-derive"
+readme = "../README.md"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = { version = "1.0", features = ["full", "extra-traits"] }
+quote = "1.0"
+proc-macro2 = "1.0" 
