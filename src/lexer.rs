@@ -373,7 +373,7 @@ impl<'a> Lexer<'a> {
                     if is_triple_quoted && self.is_line_terminator(escaped) {
                         // Line continuation in triple-quoted string
                         self.advance(); // Skip the line terminator
-                        // Handle CRLF as a single newline
+                                        // Handle CRLF as a single newline
                         if escaped == '\r' && self.current_char() == Some('\n') {
                             self.advance();
                         }
@@ -468,7 +468,7 @@ impl<'a> Lexer<'a> {
                     if self.is_line_terminator(escaped) {
                         // Line continuation
                         self.advance(); // Skip the line terminator
-                        // Handle CRLF as a single newline
+                                        // Handle CRLF as a single newline
                         if escaped == '\r' && self.current_char() == Some('\n') {
                             self.advance();
                         }

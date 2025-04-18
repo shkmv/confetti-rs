@@ -1,4 +1,4 @@
-use confetti_rs::{ConfOptions, parse};
+use confetti_rs::{parse, ConfOptions};
 use std::collections::HashMap;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

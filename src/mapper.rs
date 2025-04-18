@@ -4,7 +4,7 @@ use std::fs;
 use std::io;
 use std::path::Path;
 
-use crate::{ConfDirective, ConfOptions, parse};
+use crate::{parse, ConfDirective, ConfOptions};
 
 /// Error type for mapping operations
 #[derive(Debug)]

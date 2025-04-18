@@ -1,6 +1,6 @@
 #[cfg(feature = "derive")]
 use confetti_rs::{
-    ConfArgument, ConfDirective, ConfMap, FromConf, MapperError, ToConf, from_str, to_string,
+    from_str, to_string, ConfArgument, ConfDirective, ConfMap, FromConf, MapperError, ToConf,
 };
 #[cfg(feature = "derive")]
 use std::error::Error;

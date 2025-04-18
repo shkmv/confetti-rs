@@ -1,5 +1,5 @@
 #[cfg(feature = "derive")]
-use confetti_rs::{ConfMap, from_str, to_string};
+use confetti_rs::{from_str, to_string, ConfMap};
 #[cfg(feature = "derive")]
 use std::error::Error;
 

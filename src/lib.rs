@@ -26,7 +26,7 @@ struct ServerConfig {
     port: i32,
     #[conf_map(name = "ssl-enabled")]
     ssl_enabled: bool,
-    max_connections: Option<i32>, 
+    max_connections: Option<i32>,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -64,11 +64,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 Confetti-rs uses a simple, readable syntax:
 
-```
+```ignore
 DirectiveName {
   nested_directive "value";
   another_directive 123;
-  
+
   block_directive {
     setting true;
     array 1, 2, 3, 4;
@@ -478,11 +478,9 @@ mod tests {
         let conf_unit = result.unwrap();
         assert_eq!(conf_unit.directives.len(), 1);
         assert_eq!(conf_unit.directives[0].arguments.len(), 1);
-        assert!(
-            conf_unit.directives[0].arguments[0]
-                .value
-                .contains("multi-line")
-        );
+        assert!(conf_unit.directives[0].arguments[0]
+            .value
+            .contains("multi-line"));
         assert!(conf_unit.directives[0].arguments[0].is_triple_quoted);
     }
 

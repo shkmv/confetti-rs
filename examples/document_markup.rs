@@ -1,4 +1,4 @@
-use confetti_rs::{ConfOptions, parse};
+use confetti_rs::{parse, ConfOptions};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Example of document markup configuration

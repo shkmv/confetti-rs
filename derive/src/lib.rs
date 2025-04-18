@@ -2,7 +2,7 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::spanned::Spanned;
-use syn::{Attribute, Data, DeriveInput, Fields, Lit, Meta, NestedMeta, parse_macro_input};
+use syn::{parse_macro_input, Attribute, Data, DeriveInput, Fields, Lit, Meta, NestedMeta};
 
 /// Derives the FromConf and ToConf traits for struct types
 ///
