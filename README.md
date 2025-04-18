@@ -70,6 +70,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 ```
 
+## Official Specification
+
+This library implements the [Confetti configuration language specification](https://confetti.hgs3.me/specification/), providing a robust and fully compliant parser for the Confetti language.
+
 ## Configuration Syntax
 
 Confetti-rs uses a simple, readable syntax:
