@@ -1,0 +1,15 @@
+[package]
+name = "confetti-rs"
+version = "0.1.0"
+edition = "2024"
+description = "A configuration language and parser library written in Rust"
+authors = ["Your Name <your.email@example.com>"]
+license = "MIT"
+repository = "https://github.com/yourusername/confetti-rs"
+documentation = "https://docs.rs/confetti-rs"
+readme = "README.md"
+keywords = ["configuration", "parser", "language"]
+categories = ["parser-implementations", "configuration"]
+
+[dependencies]
+# No external dependencies, using only std
