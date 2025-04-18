@@ -522,7 +522,7 @@ mod tests {
         let int_value = 3000;
         assert!(!int_value.requires_quotes());
 
-        let float_value = 3.14;
+        let float_value = std::f64::consts::PI;
         assert!(!float_value.requires_quotes());
 
         // Test that boolean values don't require quotes
