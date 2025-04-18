@@ -70,6 +70,76 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 ```
 
+### File-Based Configuration Example
+
+Here's how to work with configuration files:
+
+```rust
+use confetti_rs::{ConfMap, from_file, to_file};
+use std::path::Path;
+use std::error::Error;
+
+// Define application configuration structures
+#[derive(ConfMap, Debug)]
+struct DatabaseConfig {
+    url: String,
+    username: String,
+    password: String,
+    max_connections: i32,
+}
+
+#[derive(ConfMap, Debug)]
+struct ServerConfig {
+    host: String,
+    port: i32,
+    #[conf_map(name = "worker-threads")]
+    worker_threads: i32,
+    database: DatabaseConfig,
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    // Create a sample configuration
+    let initial_config = ServerConfig {
+        host: "127.0.0.1".to_string(),
+        port: 8080,
+        worker_threads: 4,
+        database: DatabaseConfig {
+            url: "jdbc:postgresql://localhost:5432/mydb".to_string(),
+            username: "app_user".to_string(),
+            password: "secret".to_string(),
+            max_connections: 20,
+        },
+    };
+    
+    // Save the configuration to a file
+    let config_path = Path::new("server.conf");
+    to_file(&initial_config, config_path)?;
+    println!("Created initial configuration file");
+    
+    // Later, load the configuration from the file
+    let loaded_config = from_file::<ServerConfig>(config_path)?;
+    println!("Loaded server configuration:");
+    println!("Server: {}:{}", loaded_config.host, loaded_config.port);
+    println!("Worker threads: {}", loaded_config.worker_threads);
+    println!("Database URL: {}", loaded_config.database.url);
+    
+    // The generated file will look like:
+    // ServerConfig {
+    //     host "127.0.0.1";
+    //     port 8080;
+    //     worker-threads 4;
+    //     database {
+    //         url "jdbc:postgresql://localhost:5432/mydb";
+    //         username "app_user";
+    //         password "secret";
+    //         max_connections 20;
+    //     }
+    // }
+    
+    Ok(())
+}
+```
+
 ## Official Specification
 
 This library implements the [Confetti configuration language specification](https://confetti.hgs3.me/specification/), providing a robust and fully compliant parser for the Confetti language.
