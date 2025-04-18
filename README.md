@@ -1,4 +1,4 @@
-# Confetti-rs
+# confetti-rs
 
 [![Rust](https://github.com/shkmv/confetti-rs/actions/workflows/rust.yml/badge.svg)](https://github.com/shkmv/confetti-rs/actions/workflows/rust.yml)
 
