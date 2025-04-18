@@ -119,7 +119,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Created initial configuration file");
     
     // Later, load the configuration from the file
-    let loaded_config = from_file::<ServerConfig>(config_path)?;
+    let loaded_config = from_file::<ServerConfig, _>(config_path)?;
     println!("Loaded server configuration:");
     println!("Server: {}:{}", loaded_config.host, loaded_config.port);
     println!("Worker threads: {}", loaded_config.worker_threads);
@@ -216,8 +216,17 @@ struct AppConfig {
 }
 
 // Load from a file
-let config = from_file::<AppConfig>(Path::new("config/app.conf")).unwrap();
+let config = from_file::<AppConfig, _>(Path::new("config/app.conf")).unwrap();
 println!("App: {} v{}", config.name, config.version);
+
+// Note: When using from_file, you must specify two generic type parameters:
+// - T: The type to deserialize into (must implement FromConf trait)
+// - P: The path type (can be inferred with _ placeholder)
+// Alternatively, you can use the trait method directly: AppConfig::from_file(path)
+
+// Using the FromConf trait method directly:
+let config2 = AppConfig::from_file("config/app.conf").unwrap();
+println!("App (loaded with trait method): {} v{}", config2.name, config2.version);
 ```
 
 #### Serializing to a file

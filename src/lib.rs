@@ -282,7 +282,29 @@ pub use crate::mapper::{FromConf, MapperError, MapperOptions, ToConf, ValueConve
 ///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// # let _server_config = ServerConfig { port: 8080, host: "localhost".into(), max_connections: Some(100) };
-/// // let server_config = from_file::<ServerConfig>("config.conf")?;
+/// // Using from_file with explicit type parameters (both T and P):
+/// // let server_config = from_file::<ServerConfig, _>("config.conf")?;
+/// //
+/// // Alternatively, use the FromConf trait method directly:
+/// // let server_config = ServerConfig::from_file("config.conf")?;
+/// # Ok(())
+/// # }
+/// ```
+///
+/// You can also directly use the `from_file` method from the trait implementation:
+///
+/// ```ignore
+/// use confetti_rs::ConfMap;
+///
+/// #[derive(ConfMap, Debug)]
+/// struct ServerConfig {
+///     port: i32,
+///     host: String,
+/// }
+///
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let server_config = ServerConfig::from_file("config.conf")?;
+/// println!("Server running at {}:{}", server_config.host, server_config.port);
 /// # Ok(())
 /// # }
 /// ```
