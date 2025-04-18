@@ -133,7 +133,7 @@ impl<'a> Lexer<'a> {
                 // Check if this is a line continuation
                 if self
                     .current_char()
-                    .map_or(false, |c| self.is_line_terminator(c))
+                    .is_some_and(|c| self.is_line_terminator(c))
                 {
                     let continuation_start = start;
                     // Skip the newline
@@ -146,7 +146,7 @@ impl<'a> Lexer<'a> {
                     }
 
                     // Skip any whitespace after the line continuation
-                    while self.current_char().map_or(false, |_| self.is_whitespace()) {
+                    while self.current_char().is_some_and(|_| self.is_whitespace()) {
                         self.advance();
                     }
 
@@ -217,7 +217,7 @@ impl<'a> Lexer<'a> {
     /// Returns whether the current character is a whitespace character.
     fn is_whitespace(&self) -> bool {
         self.current_char()
-            .map_or(false, |c| c.is_whitespace() && !self.is_line_terminator(c))
+            .is_some_and(|c| c.is_whitespace() && !self.is_line_terminator(c))
     }
 
     /// Returns whether the character is a line terminator.
@@ -238,7 +238,7 @@ impl<'a> Lexer<'a> {
     /// Returns whether the current character is a newline character.
     fn is_newline(&self) -> bool {
         self.current_char()
-            .map_or(false, |c| self.is_line_terminator(c))
+            .is_some_and(|c| self.is_line_terminator(c))
     }
 
     /// Returns whether the character is a forbidden character.
@@ -278,7 +278,7 @@ impl<'a> Lexer<'a> {
 
     /// Returns whether the current character is a comment character.
     fn is_comment(&self) -> bool {
-        self.current_char().map_or(false, |c| {
+        self.current_char().is_some_and(|c| {
             c == '#'
                 || (self.options.allow_c_style_comments
                     && c == '/'
@@ -473,7 +473,7 @@ impl<'a> Lexer<'a> {
                             self.advance();
                         }
                         // Skip any whitespace after the line continuation
-                        while self.current_char().map_or(false, |_| self.is_whitespace()) {
+                        while self.current_char().is_some_and(|_| self.is_whitespace()) {
                             self.advance();
                         }
                     } else {

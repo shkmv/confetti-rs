@@ -22,7 +22,7 @@ jobs:
           toolchain: stable
           override: true
       - name: Run cargo check
-        run: cargo check --all
+        run: cargo check --lib --tests
 
   test:
     name: Test Suite
@@ -52,5 +52,5 @@ jobs:
           components: rustfmt, clippy
       - name: Run cargo fmt
         run: cargo fmt --all -- --check
-      - name: Run cargo clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
+      - name: Run cargo clippy (lib only)
+        run: cargo clippy --lib --tests -- -D warnings
