@@ -1,4 +1,3 @@
 target/
 /.cargo/
-/src/lib.rs
 .vscode/
