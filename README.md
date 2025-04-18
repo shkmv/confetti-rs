@@ -1,5 +1,7 @@
 # Confetti-rs
 
+[![Rust](https://github.com/shkmv/confetti-rs/actions/workflows/rust.yml/badge.svg)](https://github.com/shkmv/confetti-rs/actions/workflows/rust.yml)
+
 A configuration language and parser library for Rust, with a flexible mapper for converting between configuration files and Rust structs.
 
 ## Features

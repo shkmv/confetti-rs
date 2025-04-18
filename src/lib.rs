@@ -3,8 +3,8 @@ use std::fmt;
 use std::ops::Range;
 
 pub mod lexer;
-pub mod parser;
 pub mod mapper;
+pub mod parser;
 
 #[cfg(feature = "derive")]
 pub use confetti_derive::ConfMap;
@@ -13,10 +13,10 @@ pub use confetti_derive::ConfMap;
 #[doc(hidden)]
 pub mod __private {
     pub fn is_option_type(type_name: &str) -> bool {
-        type_name.starts_with("core::option::Option<") || 
-        type_name.starts_with("std::option::Option<")
+        type_name.starts_with("core::option::Option<")
+            || type_name.starts_with("std::option::Option<")
     }
-    
+
     pub fn extract_option_type(type_name: &str) -> Option<&str> {
         if is_option_type(type_name) {
             // Extract the inner type from Option<T>
@@ -27,16 +27,15 @@ pub mod __private {
             None
         }
     }
-    
+
     pub fn strip_quotes(value: &str) -> String {
         let mut result = value.to_string();
         if result.starts_with('"') && result.ends_with('"') {
-            result = result[1..result.len()-1].to_string();
+            result = result[1..result.len() - 1].to_string();
         }
         result
     }
 }
-
 
 /// Represents a configuration argument.
 #[derive(Debug, Clone)]
@@ -178,16 +177,16 @@ pub fn parse(input: &str, options: ConfOptions) -> Result<ConfUnit, ConfError> {
 }
 
 // Re-export key traits from mapper module
-pub use crate::mapper::{FromConf, ToConf, ValueConverter, MapperError, MapperOptions};
+pub use crate::mapper::{FromConf, MapperError, MapperOptions, ToConf, ValueConverter};
 
 // Create convenience wrappers for common operations
 /// Load configuration from a file into a struct
-/// 
+///
 /// # Example
-/// 
+///
 /// ```ignore
 /// use confetti_rs::{from_file, ConfMap};
-/// 
+///
 /// #[derive(ConfMap, Debug)]
 /// struct ServerConfig {
 ///     port: i32,
@@ -195,37 +194,39 @@ pub use crate::mapper::{FromConf, ToConf, ValueConverter, MapperError, MapperOpt
 ///     #[conf_map(name = "max-connections")]
 ///     max_connections: Option<i32>,
 /// }
-/// 
+///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// # let _server_config = ServerConfig { port: 8080, host: "localhost".into(), max_connections: Some(100) };
 /// // let server_config = from_file::<ServerConfig>("config.conf")?;
 /// # Ok(())
 /// # }
 /// ```
-pub fn from_file<T: FromConf, P: AsRef<std::path::Path>>(path: P) -> Result<T, mapper::MapperError> {
+pub fn from_file<T: FromConf, P: AsRef<std::path::Path>>(
+    path: P,
+) -> Result<T, mapper::MapperError> {
     T::from_file(path)
 }
 
 /// Load configuration from a string into a struct
-/// 
+///
 /// # Example
-/// 
+///
 /// ```ignore
 /// use confetti_rs::{from_str, ConfMap};
-/// 
+///
 /// #[derive(ConfMap, Debug)]
 /// struct ServerConfig {
 ///     port: i32,
 ///     host: String,
 /// }
-/// 
+///
 /// let config_str = r#"
 /// ServerConfig {
 ///   port 8080;
 ///   host "localhost";
 /// }
 /// "#;
-/// 
+///
 /// let server_config = from_str::<ServerConfig>(config_str).unwrap();
 /// assert_eq!(server_config.port, 8080);
 /// assert_eq!(server_config.host, "localhost");
@@ -235,23 +236,23 @@ pub fn from_str<T: FromConf>(s: &str) -> Result<T, mapper::MapperError> {
 }
 
 /// Convert a struct to a configuration string
-/// 
+///
 /// # Example
-/// 
+///
 /// ```ignore
 /// use confetti_rs::{to_string, ConfMap};
-/// 
+///
 /// #[derive(ConfMap, Debug)]
 /// struct ServerConfig {
 ///     port: i32,
 ///     host: String,
 /// }
-/// 
+///
 /// let server_config = ServerConfig {
 ///     port: 8080,
 ///     host: "localhost".into(),
 /// };
-/// 
+///
 /// let config_str = to_string(&server_config).unwrap();
 /// assert!(config_str.contains("port 8080"));
 /// assert!(config_str.contains("host \"localhost\""));
@@ -261,29 +262,32 @@ pub fn to_string<T: ToConf>(value: &T) -> Result<String, mapper::MapperError> {
 }
 
 /// Save a struct to a configuration file
-/// 
+///
 /// # Example
-/// 
+///
 /// ```ignore
 /// use confetti_rs::{to_file, ConfMap};
-/// 
+///
 /// #[derive(ConfMap, Debug)]
 /// struct ServerConfig {
 ///     port: i32,
 ///     host: String,
 /// }
-/// 
+///
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let server_config = ServerConfig {
 ///     port: 8080,
 ///     host: "localhost".into(),
 /// };
-/// 
+///
 /// // to_file(&server_config, "config.conf")?;
 /// # Ok(())
 /// # }
 /// ```
-pub fn to_file<T: ToConf, P: AsRef<std::path::Path>>(value: &T, path: P) -> Result<(), mapper::MapperError> {
+pub fn to_file<T: ToConf, P: AsRef<std::path::Path>>(
+    value: &T,
+    path: P,
+) -> Result<(), mapper::MapperError> {
     value.to_file(path)
 }
 
@@ -370,7 +374,10 @@ mod tests {
         let conf_unit = result.unwrap();
         assert_eq!(conf_unit.directives.len(), 1);
         assert_eq!(conf_unit.directives[0].arguments.len(), 1);
-        assert_eq!(conf_unit.directives[0].arguments[0].value, "\"example.com\"");
+        assert_eq!(
+            conf_unit.directives[0].arguments[0].value,
+            "\"example.com\""
+        );
         assert!(conf_unit.directives[0].arguments[0].is_quoted);
     }
 
@@ -386,7 +393,11 @@ mod tests {
         let conf_unit = result.unwrap();
         assert_eq!(conf_unit.directives.len(), 1);
         assert_eq!(conf_unit.directives[0].arguments.len(), 1);
-        assert!(conf_unit.directives[0].arguments[0].value.contains("multi-line"));
+        assert!(
+            conf_unit.directives[0].arguments[0]
+                .value
+                .contains("multi-line")
+        );
         assert!(conf_unit.directives[0].arguments[0].is_triple_quoted);
     }
 
@@ -405,4 +416,3 @@ mod tests {
         assert_eq!(conf_unit.directives[0].arguments[0].value, "example.com");
     }
 }
-

@@ -56,11 +56,11 @@ pub trait FromConf: Sized {
     fn from_str(s: &str) -> Result<Self, MapperError> {
         let options = MapperOptions::default().parser_options;
         let conf_unit = parse(s, options)?;
-        
+
         if conf_unit.directives.is_empty() {
             return Err(MapperError::ParseError("No directives found".into()));
         }
-        
+
         Self::from_directive(&conf_unit.directives[0])
     }
 
@@ -79,11 +79,11 @@ pub trait ToConf {
     /// Convert the implementing type to a configuration string
     fn to_string(&self) -> Result<String, MapperError> {
         let directive = self.to_directive()?;
-        
+
         // Simple serialization for now - can be enhanced later
         let mut result = String::new();
         serialize_directive(&directive, &mut result, 0)?;
-        
+
         Ok(result)
     }
 
@@ -121,7 +121,7 @@ impl Default for MapperOptions {
 fn to_kebab_case(s: &str) -> String {
     let mut result = String::new();
     let mut prev_is_lowercase = false;
-    
+
     for c in s.chars() {
         if c.is_uppercase() {
             if prev_is_lowercase {
@@ -134,7 +134,7 @@ fn to_kebab_case(s: &str) -> String {
             prev_is_lowercase = true;
         }
     }
-    
+
     result
 }
 
@@ -143,7 +143,7 @@ fn to_kebab_case(s: &str) -> String {
 fn from_kebab_case(s: &str) -> String {
     let mut result = String::new();
     let mut capitalize_next = false;
-    
+
     for c in s.chars() {
         if c == '-' {
             capitalize_next = true;
@@ -154,19 +154,23 @@ fn from_kebab_case(s: &str) -> String {
             result.push(c);
         }
     }
-    
+
     result
 }
 
 // Private helper function to serialize a directive
-fn serialize_directive(directive: &ConfDirective, output: &mut String, depth: usize) -> Result<(), MapperError> {
+fn serialize_directive(
+    directive: &ConfDirective,
+    output: &mut String,
+    depth: usize,
+) -> Result<(), MapperError> {
     // Get indent string based on depth
     let indent = "  ".repeat(depth);
-    
+
     // Write directive name
     output.push_str(&indent);
     output.push_str(&directive.name.value);
-    
+
     // Write arguments
     for arg in &directive.arguments {
         output.push(' ');
@@ -178,21 +182,21 @@ fn serialize_directive(directive: &ConfDirective, output: &mut String, depth: us
             output.push_str(&arg.value);
         }
     }
-    
+
     if directive.children.is_empty() {
         output.push_str(";\n");
     } else {
         output.push_str(" {\n");
-        
+
         // Write children
         for child in &directive.children {
             serialize_directive(child, output, depth + 1)?;
         }
-        
+
         output.push_str(&indent);
         output.push_str("}\n");
     }
-    
+
     Ok(())
 }
 
@@ -200,7 +204,7 @@ fn serialize_directive(directive: &ConfDirective, output: &mut String, depth: us
 pub trait ValueConverter: Sized {
     /// Convert from a string to this type
     fn from_conf_value(value: &str) -> Result<Self, MapperError>;
-    
+
     /// Convert this type to a string representation
     fn to_conf_value(&self) -> Result<String, MapperError>;
 }
@@ -211,7 +215,7 @@ impl ValueConverter for String {
     fn from_conf_value(value: &str) -> Result<Self, MapperError> {
         Ok(value.to_string())
     }
-    
+
     fn to_conf_value(&self) -> Result<String, MapperError> {
         Ok(self.clone())
     }
@@ -222,12 +226,13 @@ impl ValueConverter for bool {
         match value.to_lowercase().as_str() {
             "true" | "yes" | "on" | "1" => Ok(true),
             "false" | "no" | "off" | "0" => Ok(false),
-            _ => Err(MapperError::ConversionError(
-                format!("Cannot convert '{}' to bool", value)
-            )),
+            _ => Err(MapperError::ConversionError(format!(
+                "Cannot convert '{}' to bool",
+                value
+            ))),
         }
     }
-    
+
     fn to_conf_value(&self) -> Result<String, MapperError> {
         Ok(self.to_string())
     }
@@ -235,13 +240,11 @@ impl ValueConverter for bool {
 
 impl ValueConverter for i32 {
     fn from_conf_value(value: &str) -> Result<Self, MapperError> {
-        value.parse::<i32>().map_err(|e| 
-            MapperError::ConversionError(
-                format!("Cannot convert '{}' to i32: {}", value, e)
-            )
-        )
+        value.parse::<i32>().map_err(|e| {
+            MapperError::ConversionError(format!("Cannot convert '{}' to i32: {}", value, e))
+        })
     }
-    
+
     fn to_conf_value(&self) -> Result<String, MapperError> {
         Ok(self.to_string())
     }
@@ -249,13 +252,11 @@ impl ValueConverter for i32 {
 
 impl ValueConverter for f64 {
     fn from_conf_value(value: &str) -> Result<Self, MapperError> {
-        value.parse::<f64>().map_err(|e| 
-            MapperError::ConversionError(
-                format!("Cannot convert '{}' to f64: {}", value, e)
-            )
-        )
+        value.parse::<f64>().map_err(|e| {
+            MapperError::ConversionError(format!("Cannot convert '{}' to f64: {}", value, e))
+        })
     }
-    
+
     fn to_conf_value(&self) -> Result<String, MapperError> {
         Ok(self.to_string())
     }
@@ -269,7 +270,7 @@ impl<T: ValueConverter> ValueConverter for Option<T> {
             Ok(Some(T::from_conf_value(value)?))
         }
     }
-    
+
     fn to_conf_value(&self) -> Result<String, MapperError> {
         match self {
             Some(val) => val.to_conf_value(),
@@ -286,16 +287,13 @@ impl<T: ValueConverter> ValueConverter for Vec<T> {
             .filter(|s| !s.is_empty())
             .map(|s| T::from_conf_value(s))
             .collect::<Result<Vec<T>, _>>()?;
-        
+
         Ok(values)
     }
-    
+
     fn to_conf_value(&self) -> Result<String, MapperError> {
-        let values: Result<Vec<String>, _> = self
-            .iter()
-            .map(|val| val.to_conf_value())
-            .collect();
-        
+        let values: Result<Vec<String>, _> = self.iter().map(|val| val.to_conf_value()).collect();
+
         Ok(values?.join(", "))
     }
-} 
+}

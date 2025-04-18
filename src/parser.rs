@@ -1,5 +1,5 @@
-use crate::{ConfDirective, ConfUnit, ConfArgument, ConfComment, ConfError, ConfOptions};
 use crate::lexer::{Lexer, Token, TokenType};
+use crate::{ConfArgument, ConfComment, ConfDirective, ConfError, ConfOptions, ConfUnit};
 
 /// Parser for the configuration language.
 pub struct Parser<'a> {
@@ -18,7 +18,7 @@ impl<'a> Parser<'a> {
     pub fn new(input: &'a str, options: ConfOptions) -> Result<Self, ConfError> {
         let mut lexer = Lexer::new(input, options.clone());
         let current_token = lexer.next_token()?;
-        
+
         Ok(Self {
             lexer,
             current_token,
@@ -54,7 +54,10 @@ impl<'a> Parser<'a> {
             }
         }
 
-        Ok(ConfUnit { directives, comments })
+        Ok(ConfUnit {
+            directives,
+            comments,
+        })
     }
 
     /// Parses a comment.
@@ -85,7 +88,10 @@ impl<'a> Parser<'a> {
         if self.current_depth >= self.options.max_depth {
             return Err(ConfError::ParserError {
                 position: self.current_token.span.start,
-                message: format!("Maximum directive depth of {} exceeded", self.options.max_depth),
+                message: format!(
+                    "Maximum directive depth of {} exceeded",
+                    self.options.max_depth
+                ),
             });
         }
 
@@ -111,15 +117,15 @@ impl<'a> Parser<'a> {
 
         // Parse arguments
         let mut arguments = Vec::new();
-        while self.current_token.token_type == TokenType::Argument || 
-              self.current_token.token_type == TokenType::Continuation {
-            
+        while self.current_token.token_type == TokenType::Argument
+            || self.current_token.token_type == TokenType::Continuation
+        {
             // Если это токен продолжения строки, пропускаем его и продолжаем
             if self.current_token.token_type == TokenType::Continuation {
                 self.advance()?;
                 continue;
             }
-            
+
             let arg_span = self.current_token.span.clone();
             let arg_value = self.lexer.input()[arg_span.clone()].to_string();
             let argument = ConfArgument {
@@ -146,8 +152,9 @@ impl<'a> Parser<'a> {
             }
 
             // Parse child directives
-            while self.current_token.token_type != TokenType::RightCurlyBrace && 
-                  self.current_token.token_type != TokenType::Eof {
+            while self.current_token.token_type != TokenType::RightCurlyBrace
+                && self.current_token.token_type != TokenType::Eof
+            {
                 match self.current_token.token_type {
                     TokenType::Comment => {
                         let _comment = self.parse_comment()?;
@@ -175,9 +182,10 @@ impl<'a> Parser<'a> {
             self.current_depth -= 1;
         } else if self.current_token.token_type == TokenType::Semicolon {
             self.advance()?; // Skip ';'
-        } else if self.current_token.token_type != TokenType::Newline && 
-                  self.current_token.token_type != TokenType::Eof &&
-                  self.current_token.token_type != TokenType::Continuation {
+        } else if self.current_token.token_type != TokenType::Newline
+            && self.current_token.token_type != TokenType::Eof
+            && self.current_token.token_type != TokenType::Continuation
+        {
             return Err(ConfError::ParserError {
                 position: self.current_token.span.start,
                 message: "Expected ';', '{', or newline".to_string(),

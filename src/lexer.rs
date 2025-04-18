@@ -1,5 +1,5 @@
-use std::ops::Range;
 use super::ConfError;
+use std::ops::Range;
 
 /// Represents a token in the configuration language.
 #[derive(Debug, Clone, PartialEq)]
@@ -131,21 +131,25 @@ impl<'a> Lexer<'a> {
             Some('\\') => {
                 self.advance();
                 // Check if this is a line continuation
-                if self.current_char().map_or(false, |c| self.is_line_terminator(c)) {
+                if self
+                    .current_char()
+                    .map_or(false, |c| self.is_line_terminator(c))
+                {
                     let continuation_start = start;
                     // Skip the newline
                     self.advance();
                     // Handle CRLF as a single newline
-                    if self.input.as_bytes().get(self.position - 1) == Some(&b'\r') && 
-                       self.current_char() == Some('\n') {
+                    if self.input.as_bytes().get(self.position - 1) == Some(&b'\r')
+                        && self.current_char() == Some('\n')
+                    {
                         self.advance();
                     }
-                    
+
                     // Skip any whitespace after the line continuation
                     while self.current_char().map_or(false, |_| self.is_whitespace()) {
                         self.advance();
                     }
-                    
+
                     // Return the continuation token
                     return Ok(Token {
                         token_type: TokenType::Continuation,
@@ -212,28 +216,29 @@ impl<'a> Lexer<'a> {
 
     /// Returns whether the current character is a whitespace character.
     fn is_whitespace(&self) -> bool {
-        self.current_char().map_or(false, |c| 
-            c.is_whitespace() && !self.is_line_terminator(c)
-        )
+        self.current_char()
+            .map_or(false, |c| c.is_whitespace() && !self.is_line_terminator(c))
     }
 
     /// Returns whether the character is a line terminator.
     fn is_line_terminator(&self, c: char) -> bool {
         // According to the spec, these are the line terminators
-        matches!(c, 
+        matches!(
+            c,
             '\u{000A}' | // LF
             '\u{000B}' | // VT
             '\u{000C}' | // FF
             '\u{000D}' | // CR
             '\u{0085}' | // NEL
             '\u{2028}' | // LS
-            '\u{2029}'   // PS
+            '\u{2029}' // PS
         )
     }
 
     /// Returns whether the current character is a newline character.
     fn is_newline(&self) -> bool {
-        self.current_char().map_or(false, |c| self.is_line_terminator(c))
+        self.current_char()
+            .map_or(false, |c| self.is_line_terminator(c))
     }
 
     /// Returns whether the character is a forbidden character.
@@ -241,15 +246,16 @@ impl<'a> Lexer<'a> {
         // Forbidden characters are Unicode scalar values with general category
         // Control, Surrogate, and Unassigned, excluding characters with the Whitespace property
         let is_control = c.is_control() && !c.is_whitespace();
-        
+
         // Проверка на суррогатные пары не нужна, так как Rust не позволяет создавать
         // символы char из суррогатных пар. Все символы char в Rust - это допустимые
         // Unicode scalar values.
-        
+
         // Check for bidirectional formatting characters if not allowed
         let is_bidi = if !self.options.allow_bidi {
             // Unicode bidirectional formatting characters
-            matches!(c, 
+            matches!(
+                c,
                 '\u{061C}' | // ARABIC LETTER MARK
                 '\u{200E}' | // LEFT-TO-RIGHT MARK
                 '\u{200F}' | // RIGHT-TO-LEFT MARK
@@ -261,21 +267,23 @@ impl<'a> Lexer<'a> {
                 '\u{202B}' | // RIGHT-TO-LEFT EMBEDDING
                 '\u{202C}' | // POP DIRECTIONAL FORMATTING
                 '\u{202D}' | // LEFT-TO-RIGHT OVERRIDE
-                '\u{202E}'   // RIGHT-TO-LEFT OVERRIDE
+                '\u{202E}' // RIGHT-TO-LEFT OVERRIDE
             )
         } else {
             false
         };
-        
+
         is_control || is_bidi
     }
 
     /// Returns whether the current character is a comment character.
     fn is_comment(&self) -> bool {
-        self.current_char().map_or(false, |c| 
-            c == '#' || 
-            (self.options.allow_c_style_comments && c == '/' && self.next_char() == Some('*'))
-        )
+        self.current_char().map_or(false, |c| {
+            c == '#'
+                || (self.options.allow_c_style_comments
+                    && c == '/'
+                    && self.next_char() == Some('*'))
+        })
     }
 
     /// Scans a comment.
@@ -341,8 +349,7 @@ impl<'a> Lexer<'a> {
         self.advance(); // Skip opening quote
 
         // Check for triple quote
-        let is_triple_quoted = self.current_char() == Some('"') && 
-                               self.next_char() == Some('"');
+        let is_triple_quoted = self.current_char() == Some('"') && self.next_char() == Some('"');
         if is_triple_quoted {
             self.advance(); // Skip second quote
             self.advance(); // Skip third quote
@@ -436,10 +443,17 @@ impl<'a> Lexer<'a> {
         let start = self.position;
         while let Some(c) = self.current_char() {
             // Arguments are terminated by whitespace, reserved punctuators, or EOF
-            if c.is_whitespace() || c == ';' || c == '{' || c == '}' || c == '(' || c == '"' || c == '#' {
+            if c.is_whitespace()
+                || c == ';'
+                || c == '{'
+                || c == '}'
+                || c == '('
+                || c == '"'
+                || c == '#'
+            {
                 break;
             }
-            
+
             if self.is_forbidden_char(c) {
                 return Err(ConfError::LexerError {
                     position: self.position,
@@ -764,12 +778,12 @@ mod tests {
 
     #[test]
     fn test_lexer_next_token_continuation() {
-        let input = "\\\n";  // Обратный слеш + перевод строки
+        let input = "\\\n"; // Обратный слеш + перевод строки
         let options = super::super::ConfOptions::default();
         let mut lexer = Lexer::new(input, options);
         let token = lexer.next_token().unwrap();
         assert_eq!(token.token_type, TokenType::Continuation);
-        assert_eq!(token.span, 0..1);  // Только обратный слеш
+        assert_eq!(token.span, 0..1); // Только обратный слеш
         assert!(!token.is_quoted);
         assert!(!token.is_triple_quoted);
         assert!(!token.is_expression);
@@ -829,4 +843,4 @@ mod tests {
         assert!(!token.is_triple_quoted);
         assert!(token.is_expression);
     }
-} 
+}
