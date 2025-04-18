@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "confetti-derive"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "confetti-rs",
  "proc-macro2",
@@ -14,7 +14,7 @@ dependencies = [
 
 [[package]]
 name = "confetti-rs"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "confetti-derive",
 ]

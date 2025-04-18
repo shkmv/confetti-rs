@@ -21,10 +21,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-confetti-rs = "0.1.0"
-
-# If you need derive macros
-confetti-rs = { version = "0.1.0", features = ["derive"] }
+confetti-rs = { version = "0.1.1", features = ["derive"] }
 ```
 
 ## Basic Usage

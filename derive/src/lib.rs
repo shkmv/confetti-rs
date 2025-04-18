@@ -88,10 +88,13 @@ pub fn derive_conf_map(input: TokenStream) -> TokenStream {
                             quote! {
                                 if let Some(value) = &self.#field_name {
                                     let arg_value = confetti_rs::mapper::ValueConverter::to_conf_value(value)?;
+                                    // Use requires_quotes method
+                                    // Add ValueConverter trait directly to determine if quotes are needed
+                                    let is_quoted = confetti_rs::mapper::ValueConverter::requires_quotes(value);
                                     let arg = confetti_rs::ConfArgument {
                                         value: arg_value,
                                         span: 0..0,
-                                        is_quoted: true,
+                                        is_quoted: is_quoted,
                                         is_triple_quoted: false,
                                         is_expression: false,
                                     };
@@ -114,10 +117,13 @@ pub fn derive_conf_map(input: TokenStream) -> TokenStream {
                         } else {
                             quote! {
                                 let arg_value = confetti_rs::mapper::ValueConverter::to_conf_value(&self.#field_name)?;
+                                // Use requires_quotes method
+                                // Add ValueConverter trait directly to determine if quotes are needed
+                                let is_quoted = confetti_rs::mapper::ValueConverter::requires_quotes(&self.#field_name);
                                 let arg = confetti_rs::ConfArgument {
                                     value: arg_value,
                                     span: 0..0,
-                                    is_quoted: true,
+                                    is_quoted: is_quoted,
                                     is_triple_quoted: false,
                                     is_expression: false,
                                 };

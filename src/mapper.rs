@@ -176,7 +176,17 @@ fn serialize_directive(
         output.push(' ');
         if arg.is_quoted {
             output.push('"');
-            output.push_str(&arg.value);
+            // Remove quotes if they already exist in the value
+            let mut value = if arg.value.starts_with('"') && arg.value.ends_with('"') {
+                arg.value[1..arg.value.len() - 1].to_string()
+            } else {
+                arg.value.clone()
+            };
+
+            // Remove trailing commas from string values
+            value = value.trim_end_matches(',').to_string();
+
+            output.push_str(&value);
             output.push('"');
         } else {
             output.push_str(&arg.value);
@@ -207,6 +217,11 @@ pub trait ValueConverter: Sized {
 
     /// Convert this type to a string representation
     fn to_conf_value(&self) -> Result<String, MapperError>;
+
+    /// Determine if this type requires quotes when serialized
+    fn requires_quotes(&self) -> bool {
+        true // By default all types require quotes, except for those that override this method
+    }
 }
 
 // Implementation for primitive types
@@ -217,7 +232,21 @@ impl ValueConverter for String {
     }
 
     fn to_conf_value(&self) -> Result<String, MapperError> {
-        Ok(self.clone())
+        // Remove leading and trailing quotes if they exist
+        let value = if self.starts_with('"') && self.ends_with('"') {
+            &self[1..self.len() - 1]
+        } else {
+            &self[..]
+        };
+
+        // Remove trailing commas
+        let value = value.trim_end_matches(',');
+
+        Ok(value.to_string())
+    }
+
+    fn requires_quotes(&self) -> bool {
+        true
     }
 }
 
@@ -236,6 +265,10 @@ impl ValueConverter for bool {
     fn to_conf_value(&self) -> Result<String, MapperError> {
         Ok(self.to_string())
     }
+
+    fn requires_quotes(&self) -> bool {
+        false
+    }
 }
 
 impl ValueConverter for i32 {
@@ -248,6 +281,10 @@ impl ValueConverter for i32 {
     fn to_conf_value(&self) -> Result<String, MapperError> {
         Ok(self.to_string())
     }
+
+    fn requires_quotes(&self) -> bool {
+        false
+    }
 }
 
 impl ValueConverter for f64 {
@@ -259,6 +296,10 @@ impl ValueConverter for f64 {
 
     fn to_conf_value(&self) -> Result<String, MapperError> {
         Ok(self.to_string())
+    }
+
+    fn requires_quotes(&self) -> bool {
+        false
     }
 }
 
@@ -275,6 +316,13 @@ impl<T: ValueConverter> ValueConverter for Option<T> {
         match self {
             Some(val) => val.to_conf_value(),
             None => Ok("".to_string()),
+        }
+    }
+
+    fn requires_quotes(&self) -> bool {
+        match self {
+            Some(val) => val.requires_quotes(),
+            None => false,
         }
     }
 }
@@ -295,5 +343,190 @@ impl<T: ValueConverter> ValueConverter for Vec<T> {
         let values: Result<Vec<String>, _> = self.iter().map(|val| val.to_conf_value()).collect();
 
         Ok(values?.join(", "))
+    }
+
+    fn requires_quotes(&self) -> bool {
+        // Vec always serializes as a string with commas
+        true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{ConfArgument, ConfDirective};
+
+    #[test]
+    fn test_serialize_string_without_comma() {
+        // Create a test directive with a string value that has a comma
+        let directive = ConfDirective {
+            name: ConfArgument {
+                value: "TestConfig".to_string(),
+                span: 0..0,
+                is_quoted: false,
+                is_triple_quoted: false,
+                is_expression: false,
+            },
+            arguments: vec![],
+            children: vec![ConfDirective {
+                name: ConfArgument {
+                    value: "host".to_string(),
+                    span: 0..0,
+                    is_quoted: false,
+                    is_triple_quoted: false,
+                    is_expression: false,
+                },
+                arguments: vec![ConfArgument {
+                    value: "127.0.0.1,".to_string(),
+                    span: 0..0,
+                    is_quoted: true,
+                    is_triple_quoted: false,
+                    is_expression: false,
+                }],
+                children: vec![],
+            }],
+        };
+
+        // Serialize the directive
+        let mut output = String::new();
+        serialize_directive(&directive, &mut output, 0).unwrap();
+
+        // Verify the output has the comma removed
+        assert!(output.contains("\"127.0.0.1\""));
+        assert!(!output.contains("\"127.0.0.1,\""));
+    }
+
+    #[test]
+    fn test_serialize_numeric_without_quotes() {
+        // Create a test directive with a numeric value
+        let directive = ConfDirective {
+            name: ConfArgument {
+                value: "TestConfig".to_string(),
+                span: 0..0,
+                is_quoted: false,
+                is_triple_quoted: false,
+                is_expression: false,
+            },
+            arguments: vec![],
+            children: vec![ConfDirective {
+                name: ConfArgument {
+                    value: "port".to_string(),
+                    span: 0..0,
+                    is_quoted: false,
+                    is_triple_quoted: false,
+                    is_expression: false,
+                },
+                arguments: vec![ConfArgument {
+                    value: "3000".to_string(),
+                    span: 0..0,
+                    is_quoted: false,
+                    is_triple_quoted: false,
+                    is_expression: false,
+                }],
+                children: vec![],
+            }],
+        };
+
+        // Serialize the directive
+        let mut output = String::new();
+        serialize_directive(&directive, &mut output, 0).unwrap();
+
+        // Verify the output has no quotes for the numeric value
+        assert!(output.contains("port 3000;"));
+        assert!(!output.contains("port \"3000\";"));
+    }
+
+    #[test]
+    fn test_server_config_serialization() {
+        // Test case similar to the reported issue
+        let directive = ConfDirective {
+            name: ConfArgument {
+                value: "ServerConfig".to_string(),
+                span: 0..0,
+                is_quoted: false,
+                is_triple_quoted: false,
+                is_expression: false,
+            },
+            arguments: vec![],
+            children: vec![
+                ConfDirective {
+                    name: ConfArgument {
+                        value: "host".to_string(),
+                        span: 0..0,
+                        is_quoted: false,
+                        is_triple_quoted: false,
+                        is_expression: false,
+                    },
+                    arguments: vec![ConfArgument {
+                        value: "127.0.0.1,".to_string(),
+                        span: 0..0,
+                        is_quoted: true,
+                        is_triple_quoted: false,
+                        is_expression: false,
+                    }],
+                    children: vec![],
+                },
+                ConfDirective {
+                    name: ConfArgument {
+                        value: "port".to_string(),
+                        span: 0..0,
+                        is_quoted: false,
+                        is_triple_quoted: false,
+                        is_expression: false,
+                    },
+                    arguments: vec![ConfArgument {
+                        value: "3000".to_string(),
+                        span: 0..0,
+                        is_quoted: false,
+                        is_triple_quoted: false,
+                        is_expression: false,
+                    }],
+                    children: vec![],
+                },
+            ],
+        };
+
+        // Serialize the directive
+        let mut output = String::new();
+        serialize_directive(&directive, &mut output, 0).unwrap();
+
+        // Expected output should be correct
+        let expected = "ServerConfig {\n  host \"127.0.0.1\";\n  port 3000;\n}\n";
+
+        assert_eq!(output, expected);
+    }
+
+    #[test]
+    fn test_to_conf_value_string_with_quotes() {
+        // Test that string values with existing quotes have them removed
+        let value = "\"test value\"".to_string();
+        let result = value.to_conf_value().unwrap();
+        assert_eq!(result, "test value");
+    }
+
+    #[test]
+    fn test_to_conf_value_string_with_comma() {
+        // Test that string values with trailing commas have them removed
+        let value = "test value,".to_string();
+        let result = value.to_conf_value().unwrap();
+        assert_eq!(result, "test value");
+    }
+
+    #[test]
+    fn test_requires_quotes() {
+        // Test that string values require quotes
+        let string_value = String::from("test");
+        assert!(string_value.requires_quotes());
+
+        // Test that numeric values don't require quotes
+        let int_value = 3000;
+        assert!(!int_value.requires_quotes());
+
+        let float_value = 3.14;
+        assert!(!float_value.requires_quotes());
+
+        // Test that boolean values don't require quotes
+        let bool_value = true;
+        assert!(!bool_value.requires_quotes());
     }
 }

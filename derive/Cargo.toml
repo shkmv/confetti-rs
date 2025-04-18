@@ -1,6 +1,6 @@
 [package]
 name = "confetti-derive"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Derive macros for confetti-rs"
 authors = ["A.Shakhmatov <dev@shakhmatov.com>"]

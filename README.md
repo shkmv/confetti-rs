@@ -18,7 +18,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-confetti-rs = { version = "0.1.0", features = ["derive"] }
+confetti-rs = { version = "0.1.1", features = ["derive"] }
 ```
 
 The `derive` feature enables the derive macros for automatic configuration mapping.

@@ -1,6 +1,6 @@
 [package]
 name = "confetti-rs"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "A configuration language and parser library written in Rust"
 authors = ["A.Shakhmatov <dev@shakhmatov.com>"]
@@ -26,7 +26,7 @@ derive = ["confetti-derive"]
 [dependencies]
 # Для локальной разработки используем путь, а при публикации на crates.io
 # этот путь будет игнорироваться и будет использоваться только версия
-confetti-derive = { path = "derive", version = "0.1.0", optional = true }
+confetti-derive = { path = "derive", version = "0.1.1", optional = true }
 
 [workspace]
 members = ["derive"]
