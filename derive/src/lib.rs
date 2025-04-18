@@ -11,7 +11,7 @@ use syn::{Attribute, Data, DeriveInput, Fields, Lit, Meta, NestedMeta, parse_mac
 ///
 /// # Example
 ///
-/// ```rus
+/// ```rust
 /// use confetti_rs::ConfMap;
 ///
 /// #[derive(ConfMap, Debug)]

@@ -1,3 +1,88 @@
+/*!
+# Confetti-rs
+
+A configuration language and parser library for Rust, with a flexible mapper for converting between configuration files and Rust structs.
+
+## Features
+
+- Simple, intuitive configuration syntax
+- A powerful parser with customizable options
+- Automatic mapping between configuration and Rust structs
+- Support for custom data types
+- Comprehensive error handling
+
+## Basic Usage
+
+Here's a simple example of how to use Confetti-rs:
+
+```rust
+use confetti_rs::{ConfMap, from_str, to_string};
+use std::error::Error;
+
+// Define a configuration structure
+#[derive(ConfMap, Debug)]
+struct ServerConfig {
+    host: String,
+    port: i32,
+    #[conf_map(name = "ssl-enabled")]
+    ssl_enabled: bool,
+    max_connections: Option<i32>, 
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    // Configuration string in Confetti syntax
+    let config_str = r#"
+    ServerConfig {
+        host "localhost";
+        port 8080;
+        ssl-enabled false;
+        max_connections 100;
+    }
+    "#;
+
+    // Parse the configuration
+    let server_config = from_str::<ServerConfig>(config_str)?;
+    println!("Loaded config: {:?}", server_config);
+
+    // Modify the configuration
+    let new_config = ServerConfig {
+        host: "0.0.0.0".to_string(),
+        port: 443,
+        ssl_enabled: true,
+        max_connections: Some(200),
+    };
+
+    // Serialize to a string
+    let serialized = to_string(&new_config)?;
+    println!("Serialized config:\n{}", serialized);
+
+    Ok(())
+}
+```
+
+## Configuration Syntax
+
+Confetti-rs uses a simple, readable syntax:
+
+```
+DirectiveName {
+  nested_directive "value";
+  another_directive 123;
+  
+  block_directive {
+    setting true;
+    array 1, 2, 3, 4;
+  }
+}
+```
+
+## Documentation
+
+For more examples and detailed documentation, please visit:
+- [GitHub repository](https://github.com/shkmv/confetti-rs)
+- [Comprehensive documentation on docs.rs](https://docs.rs/confetti-rs)
+*/
+
 use std::error::Error;
 use std::fmt;
 use std::ops::Range;

@@ -6,6 +6,7 @@ version = 4
 name = "confetti-derive"
 version = "0.1.0"
 dependencies = [
+ "confetti-rs",
  "proc-macro2",
  "quote",
  "syn",

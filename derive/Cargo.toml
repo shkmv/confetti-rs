@@ -1,13 +1,21 @@
 [package]
 name = "confetti-derive"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 description = "Derive macros for confetti-rs"
 authors = ["A.Shakhmatov <dev@shakhmatov.com>"]
 license = "MIT"
 repository = "https://github.com/shkmv/confetti-rs"
 documentation = "https://docs.rs/confetti-derive"
-readme = "../README.md"
+readme = "../README-crates.io.md"
+keywords = ["configuration", "derive", "macros"]
+categories = ["parser-implementations", "config"]
+include = [
+    "src/**/*",
+    "Cargo.toml",
+    "../LICENSE",
+    "../README-crates.io.md",
+]
 
 [lib]
 proc-macro = true
@@ -15,4 +23,7 @@ proc-macro = true
 [dependencies]
 syn = { version = "1.0", features = ["full", "extra-traits"] }
 quote = "1.0"
-proc-macro2 = "1.0" 
+proc-macro2 = "1.0"
+
+[dev-dependencies]
+confetti-rs = { path = ".." } 
