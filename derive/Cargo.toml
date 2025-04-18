@@ -3,9 +3,9 @@ name = "confetti-derive"
 version = "0.1.0"
 edition = "2024"
 description = "Derive macros for confetti-rs"
-authors = ["Your Name <your.email@example.com>"]
+authors = ["A.Shakhmatov <dev@shakhmatov.com>"]
 license = "MIT"
-repository = "https://github.com/yourusername/confetti-rs"
+repository = "https://github.com/shkmv/confetti-rs"
 documentation = "https://docs.rs/confetti-derive"
 readme = "../README.md"
 

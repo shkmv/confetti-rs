@@ -106,6 +106,71 @@ struct AppConfig {
 }
 ```
 
+### Common Usage Examples
+
+#### Loading from a string
+
+```rust
+use confetti_rs::{ConfMap, from_str};
+
+#[derive(ConfMap, Debug)]
+struct ServerConfig {
+    host: String,
+    port: i32,
+}
+
+// Parse from a string
+let config_str = r#"
+ServerConfig {
+    host "localhost";
+    port 8080;
+}
+"#;
+
+let config = from_str::<ServerConfig>(config_str).unwrap();
+println!("Server at {}:{}", config.host, config.port);
+```
+
+#### Loading from a file
+
+```rust
+use confetti_rs::{ConfMap, from_file};
+use std::path::Path;
+
+#[derive(ConfMap, Debug)]
+struct AppConfig {
+    name: String,
+    version: String,
+}
+
+// Load from a file
+let config = from_file::<AppConfig>(Path::new("config/app.conf")).unwrap();
+println!("App: {} v{}", config.name, config.version);
+```
+
+#### Serializing to a file
+
+```rust
+use confetti_rs::{ConfMap, to_file};
+use std::path::Path;
+
+#[derive(ConfMap, Debug)]
+struct LogConfig {
+    level: String,
+    path: String,
+}
+
+let log_config = LogConfig {
+    level: "info".to_string(),
+    path: "/var/log/app.log".to_string(),
+};
+
+// Save to a file
+to_file(&log_config, Path::new("config/logging.conf")).unwrap();
+```
+
+For more comprehensive examples, including nested structures, collections, and custom field mappings, see the [examples directory](https://github.com/shkmv/confetti-rs/tree/main/examples) in the repository.
+
 ### Custom Field Names
 
 Use the `conf_map` attribute to customize field names in the configuration:
