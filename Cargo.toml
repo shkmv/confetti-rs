@@ -27,6 +27,7 @@ derive = ["confetti-derive"]
 # Для локальной разработки используем путь, а при публикации на crates.io
 # этот путь будет игнорироваться и будет использоваться только версия
 confetti-derive = { path = "derive", version = "0.1.1", optional = true }
+unicode-general-category = "1"
 
 [workspace]
 members = ["derive"]

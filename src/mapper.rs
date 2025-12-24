@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fmt;
 use std::fs;
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::{parse, ConfDirective, ConfOptions};
 
@@ -116,48 +116,6 @@ impl Default for MapperOptions {
     }
 }
 
-// Helper function to convert to kebab case
-#[allow(dead_code)]
-fn to_kebab_case(s: &str) -> String {
-    let mut result = String::new();
-    let mut prev_is_lowercase = false;
-
-    for c in s.chars() {
-        if c.is_uppercase() {
-            if prev_is_lowercase {
-                result.push('-');
-            }
-            result.push(c.to_lowercase().next().unwrap());
-            prev_is_lowercase = false;
-        } else {
-            result.push(c);
-            prev_is_lowercase = true;
-        }
-    }
-
-    result
-}
-
-// Helper function to convert from kebab case
-#[allow(dead_code)]
-fn from_kebab_case(s: &str) -> String {
-    let mut result = String::new();
-    let mut capitalize_next = false;
-
-    for c in s.chars() {
-        if c == '-' {
-            capitalize_next = true;
-        } else if capitalize_next {
-            result.push(c.to_uppercase().next().unwrap());
-            capitalize_next = false;
-        } else {
-            result.push(c);
-        }
-    }
-
-    result
-}
-
 // Private helper function to serialize a directive
 fn serialize_directive(
     directive: &ConfDirective,
@@ -176,12 +134,13 @@ fn serialize_directive(
         output.push(' ');
         if arg.is_quoted {
             output.push('"');
-            // Remove quotes if they already exist in the value
-            let mut value = if arg.value.starts_with('"') && arg.value.ends_with('"') {
-                arg.value[1..arg.value.len() - 1].to_string()
-            } else {
-                arg.value.clone()
-            };
+            // Remove quotes if they already exist in the value (with length safety check)
+            let mut value =
+                if arg.value.starts_with('"') && arg.value.ends_with('"') && arg.value.len() >= 2 {
+                    arg.value[1..arg.value.len() - 1].to_string()
+                } else {
+                    arg.value.clone()
+                };
 
             // Remove trailing commas from string values
             value = value.trim_end_matches(',').to_string();
@@ -232,8 +191,8 @@ impl ValueConverter for String {
     }
 
     fn to_conf_value(&self) -> Result<String, MapperError> {
-        // Remove leading and trailing quotes if they exist
-        let value = if self.starts_with('"') && self.ends_with('"') {
+        // Remove leading and trailing quotes if they exist (with length safety check)
+        let value = if self.starts_with('"') && self.ends_with('"') && self.len() >= 2 {
             &self[1..self.len() - 1]
         } else {
             &self[..]
@@ -300,6 +259,235 @@ impl ValueConverter for f64 {
 
     fn requires_quotes(&self) -> bool {
         false
+    }
+}
+
+impl ValueConverter for f32 {
+    fn from_conf_value(value: &str) -> Result<Self, MapperError> {
+        value.parse::<f32>().map_err(|e| {
+            MapperError::ConversionError(format!("Cannot convert '{}' to f32: {}", value, e))
+        })
+    }
+
+    fn to_conf_value(&self) -> Result<String, MapperError> {
+        Ok(self.to_string())
+    }
+
+    fn requires_quotes(&self) -> bool {
+        false
+    }
+}
+
+impl ValueConverter for i8 {
+    fn from_conf_value(value: &str) -> Result<Self, MapperError> {
+        value.parse::<i8>().map_err(|e| {
+            MapperError::ConversionError(format!("Cannot convert '{}' to i8: {}", value, e))
+        })
+    }
+
+    fn to_conf_value(&self) -> Result<String, MapperError> {
+        Ok(self.to_string())
+    }
+
+    fn requires_quotes(&self) -> bool {
+        false
+    }
+}
+
+impl ValueConverter for i16 {
+    fn from_conf_value(value: &str) -> Result<Self, MapperError> {
+        value.parse::<i16>().map_err(|e| {
+            MapperError::ConversionError(format!("Cannot convert '{}' to i16: {}", value, e))
+        })
+    }
+
+    fn to_conf_value(&self) -> Result<String, MapperError> {
+        Ok(self.to_string())
+    }
+
+    fn requires_quotes(&self) -> bool {
+        false
+    }
+}
+
+impl ValueConverter for i64 {
+    fn from_conf_value(value: &str) -> Result<Self, MapperError> {
+        value.parse::<i64>().map_err(|e| {
+            MapperError::ConversionError(format!("Cannot convert '{}' to i64: {}", value, e))
+        })
+    }
+
+    fn to_conf_value(&self) -> Result<String, MapperError> {
+        Ok(self.to_string())
+    }
+
+    fn requires_quotes(&self) -> bool {
+        false
+    }
+}
+
+impl ValueConverter for i128 {
+    fn from_conf_value(value: &str) -> Result<Self, MapperError> {
+        value.parse::<i128>().map_err(|e| {
+            MapperError::ConversionError(format!("Cannot convert '{}' to i128: {}", value, e))
+        })
+    }
+
+    fn to_conf_value(&self) -> Result<String, MapperError> {
+        Ok(self.to_string())
+    }
+
+    fn requires_quotes(&self) -> bool {
+        false
+    }
+}
+
+impl ValueConverter for isize {
+    fn from_conf_value(value: &str) -> Result<Self, MapperError> {
+        value.parse::<isize>().map_err(|e| {
+            MapperError::ConversionError(format!("Cannot convert '{}' to isize: {}", value, e))
+        })
+    }
+
+    fn to_conf_value(&self) -> Result<String, MapperError> {
+        Ok(self.to_string())
+    }
+
+    fn requires_quotes(&self) -> bool {
+        false
+    }
+}
+
+impl ValueConverter for u8 {
+    fn from_conf_value(value: &str) -> Result<Self, MapperError> {
+        value.parse::<u8>().map_err(|e| {
+            MapperError::ConversionError(format!("Cannot convert '{}' to u8: {}", value, e))
+        })
+    }
+
+    fn to_conf_value(&self) -> Result<String, MapperError> {
+        Ok(self.to_string())
+    }
+
+    fn requires_quotes(&self) -> bool {
+        false
+    }
+}
+
+impl ValueConverter for u16 {
+    fn from_conf_value(value: &str) -> Result<Self, MapperError> {
+        value.parse::<u16>().map_err(|e| {
+            MapperError::ConversionError(format!("Cannot convert '{}' to u16: {}", value, e))
+        })
+    }
+
+    fn to_conf_value(&self) -> Result<String, MapperError> {
+        Ok(self.to_string())
+    }
+
+    fn requires_quotes(&self) -> bool {
+        false
+    }
+}
+
+impl ValueConverter for u32 {
+    fn from_conf_value(value: &str) -> Result<Self, MapperError> {
+        value.parse::<u32>().map_err(|e| {
+            MapperError::ConversionError(format!("Cannot convert '{}' to u32: {}", value, e))
+        })
+    }
+
+    fn to_conf_value(&self) -> Result<String, MapperError> {
+        Ok(self.to_string())
+    }
+
+    fn requires_quotes(&self) -> bool {
+        false
+    }
+}
+
+impl ValueConverter for u64 {
+    fn from_conf_value(value: &str) -> Result<Self, MapperError> {
+        value.parse::<u64>().map_err(|e| {
+            MapperError::ConversionError(format!("Cannot convert '{}' to u64: {}", value, e))
+        })
+    }
+
+    fn to_conf_value(&self) -> Result<String, MapperError> {
+        Ok(self.to_string())
+    }
+
+    fn requires_quotes(&self) -> bool {
+        false
+    }
+}
+
+impl ValueConverter for u128 {
+    fn from_conf_value(value: &str) -> Result<Self, MapperError> {
+        value.parse::<u128>().map_err(|e| {
+            MapperError::ConversionError(format!("Cannot convert '{}' to u128: {}", value, e))
+        })
+    }
+
+    fn to_conf_value(&self) -> Result<String, MapperError> {
+        Ok(self.to_string())
+    }
+
+    fn requires_quotes(&self) -> bool {
+        false
+    }
+}
+
+impl ValueConverter for usize {
+    fn from_conf_value(value: &str) -> Result<Self, MapperError> {
+        value.parse::<usize>().map_err(|e| {
+            MapperError::ConversionError(format!("Cannot convert '{}' to usize: {}", value, e))
+        })
+    }
+
+    fn to_conf_value(&self) -> Result<String, MapperError> {
+        Ok(self.to_string())
+    }
+
+    fn requires_quotes(&self) -> bool {
+        false
+    }
+}
+
+impl ValueConverter for char {
+    fn from_conf_value(value: &str) -> Result<Self, MapperError> {
+        let mut chars = value.chars();
+        match (chars.next(), chars.next()) {
+            (Some(c), None) => Ok(c),
+            _ => Err(MapperError::ConversionError(format!(
+                "Cannot convert '{}' to char: expected single character",
+                value
+            ))),
+        }
+    }
+
+    fn to_conf_value(&self) -> Result<String, MapperError> {
+        Ok(self.to_string())
+    }
+
+    fn requires_quotes(&self) -> bool {
+        true
+    }
+}
+
+impl ValueConverter for PathBuf {
+    fn from_conf_value(value: &str) -> Result<Self, MapperError> {
+        Ok(PathBuf::from(value))
+    }
+
+    fn to_conf_value(&self) -> Result<String, MapperError> {
+        self.to_str()
+            .map(|s| s.to_string())
+            .ok_or_else(|| MapperError::ConversionError("Path contains invalid UTF-8".to_string()))
+    }
+
+    fn requires_quotes(&self) -> bool {
+        true
     }
 }
 

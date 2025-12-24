@@ -1,5 +1,6 @@
 use super::ConfError;
 use std::ops::Range;
+use unicode_general_category::{get_general_category, GeneralCategory};
 
 /// Represents a token in the configuration language.
 #[derive(Debug, Clone, PartialEq)]
@@ -242,17 +243,23 @@ impl<'a> Lexer<'a> {
     }
 
     /// Returns whether the character is a forbidden character.
+    ///
+    /// Per the Confetti specification, forbidden characters are Unicode scalar values
+    /// with general category Control, Surrogate, and Unassigned, excluding characters
+    /// with the Whitespace property.
     fn is_forbidden_char(&self, c: char) -> bool {
-        // Forbidden characters are Unicode scalar values with general category
-        // Control, Surrogate, and Unassigned, excluding characters with the Whitespace property
-        let is_control = c.is_control() && !c.is_whitespace();
+        // Use unicode-general-category for proper Unicode category detection
+        let category = get_general_category(c);
 
-        // Проверка на суррогатные пары не нужна, так как Rust не позволяет создавать
-        // символы char из суррогатных пар. Все символы char в Rust - это допустимые
-        // Unicode scalar values.
+        // Check for forbidden Unicode categories (Control, Surrogate, Unassigned)
+        // Note: Rust's char type cannot represent surrogates, so we only check Control and Unassigned
+        let is_forbidden_category = matches!(
+            category,
+            GeneralCategory::Control | GeneralCategory::Unassigned
+        ) && !c.is_whitespace();
 
-        // Check for bidirectional formatting characters if not allowed
-        let is_bidi = if !self.options.allow_bidi {
+        // Check for bidirectional formatting characters if forbidden
+        let is_bidi = if self.options.forbid_bidi_characters {
             // Unicode bidirectional formatting characters
             matches!(
                 c,
@@ -273,7 +280,7 @@ impl<'a> Lexer<'a> {
             false
         };
 
-        is_control || is_bidi
+        is_forbidden_category || is_bidi
     }
 
     /// Returns whether the current character is a comment character.
@@ -282,7 +289,7 @@ impl<'a> Lexer<'a> {
             c == '#'
                 || (self.options.allow_c_style_comments
                     && c == '/'
-                    && self.next_char() == Some('*'))
+                    && (self.next_char() == Some('*') || self.next_char() == Some('/')))
         })
     }
 
@@ -291,7 +298,7 @@ impl<'a> Lexer<'a> {
         let start = self.position;
         match self.current_char() {
             Some('#') => {
-                // Single-line comment
+                // Single-line comment with #
                 self.advance();
                 while let Some(c) = self.current_char() {
                     if self.is_line_terminator(c) {
@@ -306,8 +313,25 @@ impl<'a> Lexer<'a> {
                     self.advance();
                 }
             }
+            Some('/') if self.next_char() == Some('/') && self.options.allow_c_style_comments => {
+                // C-style single-line comment with //
+                self.advance(); // Skip first '/'
+                self.advance(); // Skip second '/'
+                while let Some(c) = self.current_char() {
+                    if self.is_line_terminator(c) {
+                        break;
+                    }
+                    if self.is_forbidden_char(c) {
+                        return Err(ConfError::LexerError {
+                            position: self.position,
+                            message: format!("Forbidden character in comment: U+{:04X}", c as u32),
+                        });
+                    }
+                    self.advance();
+                }
+            }
             Some('/') if self.next_char() == Some('*') && self.options.allow_c_style_comments => {
-                // Multi-line comment
+                // Multi-line comment with /* */
                 self.advance(); // Skip '/'
                 self.advance(); // Skip '*'
                 let mut found_end = false;
@@ -398,8 +422,8 @@ impl<'a> Lexer<'a> {
                             break;
                         }
                     }
-                    // Not a triple quote end, rewind position
-                    self.position -= 1;
+                    // Not a triple quote end, rewind position (using saturating_sub for safety)
+                    self.position = self.position.saturating_sub(1);
                 } else {
                     self.advance(); // Skip closing quote
                     found_end = true;

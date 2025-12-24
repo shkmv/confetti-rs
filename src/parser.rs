@@ -33,6 +33,24 @@ impl<'a> Parser<'a> {
         Ok(())
     }
 
+    /// Safely extracts text from a span, returning an error if the span is invalid.
+    fn get_text_from_span(&self, span: &std::ops::Range<usize>) -> Result<&str, ConfError> {
+        let input = self.lexer.input();
+        if span.start <= span.end && span.end <= input.len() {
+            Ok(&input[span.clone()])
+        } else {
+            Err(ConfError::ParserError {
+                position: span.start,
+                message: format!(
+                    "Invalid span {}..{} for input of length {}",
+                    span.start,
+                    span.end,
+                    input.len()
+                ),
+            })
+        }
+    }
+
     /// Parses a configuration unit.
     pub fn parse(&mut self) -> Result<ConfUnit, ConfError> {
         let mut directives = Vec::new();
@@ -70,7 +88,7 @@ impl<'a> Parser<'a> {
         }
 
         let span = self.current_token.span.clone();
-        let content = self.lexer.input()[span.clone()].to_string();
+        let content = self.get_text_from_span(&span)?.to_string();
         let is_multi_line = content.starts_with("/*");
 
         self.advance()?;
@@ -104,7 +122,7 @@ impl<'a> Parser<'a> {
         }
 
         let name_span = self.current_token.span.clone();
-        let name_value = self.lexer.input()[name_span.clone()].to_string();
+        let name_value = self.get_text_from_span(&name_span)?.to_string();
         let name = ConfArgument {
             value: name_value,
             span: name_span,
@@ -127,7 +145,7 @@ impl<'a> Parser<'a> {
             }
 
             let arg_span = self.current_token.span.clone();
-            let arg_value = self.lexer.input()[arg_span.clone()].to_string();
+            let arg_value = self.get_text_from_span(&arg_span)?.to_string();
             let argument = ConfArgument {
                 value: arg_value,
                 span: arg_span,
