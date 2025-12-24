@@ -785,9 +785,7 @@ mod tests {
         assert!(result.is_ok());
         let conf_unit = result.unwrap();
         assert_eq!(conf_unit.directives.len(), 1);
-        assert!(conf_unit.directives[0].arguments[0]
-            .value
-            .contains("Hello"));
+        assert!(conf_unit.directives[0].arguments[0].value.contains("Hello"));
     }
 
     #[test]
